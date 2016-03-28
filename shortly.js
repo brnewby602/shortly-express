@@ -2,7 +2,8 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
-
+var cookieParser = require('cookie-parser');
+var session = require('express-session');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -10,6 +11,7 @@ var User = require('./app/models/user');
 var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
+var genuuid = require('./app/genuuid');
 
 var app = express();
 
@@ -23,7 +25,42 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
 
-app.get('/', 
+//adding cookies and sessions for authentication
+app.use(cookieParser('shhhh, very secret'));
+// app.use(session());
+
+// var genuuid = function () {
+//   return 12345;
+// };
+
+app.use(session({
+  genid: function(req) {
+    console.log('*****************Inside genid func call*****************');
+    return genuuid(); // use UUIDs for session IDs
+  },
+  resave: false,
+  saveUninitialized: true,
+  secret: 'tacocat'
+}));
+ 
+ 
+var restrict = function (req, res, next) {
+  if (req.session.user) {
+    next();
+  } else {
+    req.session.error = 'Access denied!';
+    res.redirect('/login');
+  }
+};
+//end cookies and session
+
+app.get('/login', 
+function(req, res) {
+  console.log('====================inside login GET call ===============');
+  res.render('login');
+});
+
+app.get('/', restrict, 
 function(req, res) {
   res.render('index');
 });
