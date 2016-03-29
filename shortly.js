@@ -82,14 +82,15 @@ function(req, res) {
   db.knex('users')
       .where('username', '=', username)
       .then(function(users) {
-        console.log('POST login, select for users with username: ');
-        console.log(username);
-        console.log(users);
+        // console.log('POST login, select for users with username: ');
+        // console.log(username);
+        // console.log(users);
 
         if (users.length === 0) {
+          console.log('****************atempting to redirect to login');
           // user does not exist, redirect to login again
           // TODO: error return for incorrect user name
-          res.render('login');
+          res.redirect('/login');
         } else {     // if the user exists
           // retrieve the salt and the hashed password
           var hashword = users[0]['password'];
@@ -111,6 +112,7 @@ function(req, res) {
 
 
           } else { // if not equal
+            res.redirect('/login');
             // redirect to login page  (TODO: add error)
           }
 
@@ -155,8 +157,10 @@ function(req, res) {
             'password': password
           }).save()
           .then(function() {
-
-            // TODO: Add a session and redirect to home page 
+            req.session.regenerate(function() {
+              req.session.user = username;
+              res.redirect('/');
+            });
             
           });
 /*
@@ -177,7 +181,7 @@ function(req, res) {
 
       });
   
-  res.render('signup');
+  // res.render('signup');
 });
 
 app.get('/', restrict, 
@@ -226,6 +230,13 @@ function(req, res) {
         });
       });
     }
+  });
+});
+
+ 
+app.get('/logout', function(req, res) {
+  req.session.destroy(function() {
+    res.redirect('/');
   });
 });
 

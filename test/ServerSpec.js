@@ -326,6 +326,8 @@ describe('test it', function() {
       };
 
       requestWithSession(options, function(error, res, body) {
+        console.log('non existent user tst ***********************************');
+        console.log(res);
         expect(res.headers.location).to.equal('/login');
         done();
       });
