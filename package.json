@@ -25,6 +25,8 @@
     "forever": "^0.10.11",
     "knex": "^0.9.0",
     "nodemon": "^1.2.1",
+    "passport": "^0.3.2",
+    "passport-github2": "^0.1.10",
     "request": "^2.34.0",
     "serve-favicon": "^2.3.0",
     "session-file-store": "^0.2.0",
