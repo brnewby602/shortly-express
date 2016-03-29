@@ -13,6 +13,7 @@ var Link = require('./app/models/link');
 var Click = require('./app/models/click');
 var genuuid = require('./app/genuuid');
 var FileStore = require('session-file-store')(session);
+var favicon = require('serve-favicon');
 
 // Move out once we modularize 
 var bcrypt = require('bcrypt-nodejs');
@@ -37,6 +38,9 @@ app.use( function(req, res, next) {
 
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(favicon(__dirname + '/public/favicon.ico'));
+
 app.use(express.static(__dirname + '/public'));
 
 
@@ -55,11 +59,11 @@ app.use(session({
 }));
 
 
-/* Debugging to check the session value */
-app.use(function printSession(req, res, next) {
-  console.log('req.session = ', req.session);
-  return next();
-});
+// /* Debugging to check the session value */
+// app.use(function printSession(req, res, next) {
+//   console.log('req.session = ', req.session);
+//   return next();
+// });
  
  
 var checkuser = function (req, res, next) {
@@ -107,7 +111,7 @@ function(req, res) {
         if (users.length === 0) {
           // user does not exist, redirect to login again
           // TODO: error return for incorrect user name
-          res.redirect('/login');
+          res.render('login');
         } else {     // if the user exists
           // retrieve the salt and the hashed password
           var hashword = users[0]['password'];
@@ -127,7 +131,7 @@ function(req, res) {
 
 
           } else { // if not equal
-            res.redirect('/login');
+            res.render('login');
             // redirect to login page  (TODO: add error)
           }
 
