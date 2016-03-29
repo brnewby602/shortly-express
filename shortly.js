@@ -12,6 +12,11 @@ var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
 var genuuid = require('./app/genuuid');
+var FileStore = require('session-file-store')(session);
+
+// Move out once we modularize 
+var bcrypt = require('bcrypt-nodejs');
+
 
 var app = express();
 
@@ -35,13 +40,20 @@ app.use(cookieParser('shhhh, very secret'));
 
 app.use(session({
   genid: function(req) {
-    console.log('*****************Inside genid func call*****************');
     return genuuid(); // use UUIDs for session IDs
   },
   resave: false,
   saveUninitialized: true,
-  secret: 'tacocat'
+  secret: 'tacocat',
+  store: new FileStore()
 }));
+
+
+/* Debugging to check the session value */
+app.use(function printSession(req, res, next) {
+  console.log('req.session = ', req.session);
+  return next();
+});
  
  
 var restrict = function (req, res, next) {
@@ -56,8 +68,116 @@ var restrict = function (req, res, next) {
 
 app.get('/login', 
 function(req, res) {
-  console.log('====================inside login GET call ===============');
   res.render('login');
+});
+
+
+app.post('/login', 
+function(req, res) {
+
+  var username = req.body.username;
+  var password = req.body.password;
+
+  // retrieve user name
+  db.knex('users')
+      .where('username', '=', username)
+      .then(function(users) {
+        console.log('POST login, select for users with username: ');
+        console.log(username);
+        console.log(users);
+
+        if (users.length === 0) {
+          // user does not exist, redirect to login again
+          // TODO: error return for incorrect user name
+          res.render('login');
+        } else {     // if the user exists
+          // retrieve the salt and the hashed password
+          var hashword = users[0]['password'];
+          var salt = users[0]['salt'];
+
+          // hash the passed in password/salt combo
+          var hash = bcrypt.hashSync(password, salt);
+      
+          console.log('hash = ' + hash + ', hash length = ' + hash.length);
+          console.log('hashword = ' + hashword + 'hashword length = ' + hashword.length);
+          // compare the resulting hash with the hashed password
+          if (hash === hashword) { // if they are equal
+            // create new session id
+            // redirect to home page
+            req.session.regenerate(function() {
+              req.session.user = username;
+              res.redirect('/');
+            });
+
+
+          } else { // if not equal
+            // redirect to login page  (TODO: add error)
+          }
+
+        }
+      });
+
+
+  // if (username === 'demo' && password === 'demo') {
+  //   request.session.regenerate(function() {
+  //     request.session.user = username;
+  //     response.redirect('/restricted');
+  //   });
+  // } else {
+  //   res.redirect('login');
+  // }
+});
+
+app.get('/signup', 
+function(req, res) {
+  res.render('signup');
+});
+
+app.post('/signup', 
+function(req, res) {
+  // get login and user
+  var username = req.body.username;
+  var password = req.body.password;  
+
+  // check if this user is already in the database
+  db.knex('users')
+      .where('username', '=', username)
+      .then(function(user) {
+        // if it is, it fails (TODO: add error)
+        if (user.length > 0) {
+          console.log('User already exists, cannot sign up again: ');
+          console.log(user);
+          res.redirect('signup');
+        } else {
+          // user does not exist, create them
+          new User({
+            'username': username,
+            'password': password
+          }).save()
+          .then(function() {
+
+            // TODO: Add a session and redirect to home page 
+            
+          });
+/*
+          .then( function() {
+
+            db.knex('users')
+              .where('username', '=', username)
+              .then(function(user) {
+                console.log('User is created!!' + JSON.stringify(user));
+                console.log(user);
+              });         
+          });
+          */
+        }
+      }).
+      catch(function(err) {
+        console.log('inside ERROR for get user: ' + err);
+
+      });
+  
+  res.render('signup');
 });
 
 app.get('/', restrict, 
@@ -65,19 +185,19 @@ function(req, res) {
   res.render('index');
 });
 
-app.get('/create', 
+app.get('/create', restrict, 
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links', 
+app.get('/links', restrict, 
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
 });
 
-app.post('/links', 
+app.post('/links', restrict, 
 function(req, res) {
   var uri = req.body.url;
 

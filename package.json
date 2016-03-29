@@ -7,7 +7,7 @@
   "license": "Proprietary",
   "private": true,
   "scripts": {
-    "start": "./node_modules/.bin/nodemon --debug --ignore node_modules shortly.js",
+    "start": "./node_modules/.bin/nodemon --debug --ignore node_modules --ignore sessions shortly.js",
     "test": "node shortly.js & ./node_modules/.bin/mocha --bail --reporter nyan test/ServerSpec.js; pkill -n node;",
     "postinstall": "curl -s https://raw.githubusercontent.com/hackreactor-labs/pomander/master/bin/install | bash",
     "lint": "eslint ./"
@@ -26,6 +26,7 @@
     "knex": "^0.9.0",
     "nodemon": "^1.2.1",
     "request": "^2.34.0",
+    "session-file-store": "^0.2.0",
     "sqlite3": "~3.0.5"
   },
   "devDependencies": {

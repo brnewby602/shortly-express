@@ -1,7 +1,7 @@
 var crypto = require('crypto');
-module.exports = genUuid;
+// module.exports = genUuid;
 
-var genUuid = function(callback) {
+module.exports = genUuid = function(callback) {
   if (typeof(callback) !== 'function') {
     return uuidFromBytes(crypto.randomBytes(16));
   }
