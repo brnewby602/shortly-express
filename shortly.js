@@ -32,11 +32,6 @@ app.use(express.static(__dirname + '/public'));
 
 //adding cookies and sessions for authentication
 app.use(cookieParser('shhhh, very secret'));
-// app.use(session());
-
-// var genuuid = function () {
-//   return 12345;
-// };
 
 app.use(session({
   genid: function(req) {
@@ -45,7 +40,8 @@ app.use(session({
   resave: false,
   saveUninitialized: true,
   secret: 'tacocat',
-  store: new FileStore()
+  store: new FileStore(),
+  cookie: { maxAge: (1000 * 60) }
 }));
 
 
@@ -57,6 +53,9 @@ app.use(function printSession(req, res, next) {
  
  
 var checkuser = function (req, res, next) {
+
+  // TODO: do we need to read in cookie and verify it hasn't expired
+  // or look at using session-cookie instead of using store
   if (req.session.user) {
     next();
   } else {
@@ -82,12 +81,7 @@ function(req, res) {
   db.knex('users')
       .where('username', '=', username)
       .then(function(users) {
-        // console.log('POST login, select for users with username: ');
-        // console.log(username);
-        // console.log(users);
-
         if (users.length === 0) {
-          console.log('****************atempting to redirect to login');
           // user does not exist, redirect to login again
           // TODO: error return for incorrect user name
           res.redirect('/login');
@@ -99,8 +93,6 @@ function(req, res) {
           // hash the passed in password/salt combo
           var hash = bcrypt.hashSync(password, salt);
       
-          console.log('hash = ' + hash + ', hash length = ' + hash.length);
-          console.log('hashword = ' + hashword + 'hashword length = ' + hashword.length);
           // compare the resulting hash with the hashed password
           if (hash === hashword) { // if they are equal
             // create new session id
@@ -119,15 +111,6 @@ function(req, res) {
         }
       });
 
-
-  // if (username === 'demo' && password === 'demo') {
-  //   request.session.regenerate(function() {
-  //     request.session.user = username;
-  //     response.redirect('/checkusered');
-  //   });
-  // } else {
-  //   res.redirect('login');
-  // }
 });
 
 app.get('/signup', 
@@ -147,8 +130,6 @@ function(req, res) {
       .then(function(user) {
         // if it is, it fails (TODO: add error)
         if (user.length > 0) {
-          console.log('User already exists, cannot sign up again: ');
-          console.log(user);
           res.redirect('signup');
         } else {
           // user does not exist, create them
@@ -161,27 +142,13 @@ function(req, res) {
               req.session.user = username;
               res.redirect('/');
             });
-            
           });
-/*
-          .then( function() {
-
-            db.knex('users')
-              .where('username', '=', username)
-              .then(function(user) {
-                console.log('User is created!!' + JSON.stringify(user));
-                console.log(user);
-              });         
-          });
-          */
         }
       }).
       catch(function(err) {
         console.log('inside ERROR for get user: ' + err);
 
       });
-  
-  // res.render('signup');
 });
 
 app.get('/', checkuser, 
