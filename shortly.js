@@ -56,7 +56,7 @@ app.use(function printSession(req, res, next) {
 });
  
  
-var restrict = function (req, res, next) {
+var checkuser = function (req, res, next) {
   if (req.session.user) {
     next();
   } else {
@@ -123,7 +123,7 @@ function(req, res) {
   // if (username === 'demo' && password === 'demo') {
   //   request.session.regenerate(function() {
   //     request.session.user = username;
-  //     response.redirect('/restricted');
+  //     response.redirect('/checkusered');
   //   });
   // } else {
   //   res.redirect('login');
@@ -184,24 +184,24 @@ function(req, res) {
   // res.render('signup');
 });
 
-app.get('/', restrict, 
+app.get('/', checkuser, 
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create', restrict, 
+app.get('/create', checkuser, 
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links', restrict, 
+app.get('/links', checkuser, 
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
 });
 
-app.post('/links', restrict, 
+app.post('/links', checkuser, 
 function(req, res) {
   var uri = req.body.url;
 
