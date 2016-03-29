@@ -25,6 +25,16 @@ app.set('view engine', 'ejs');
 app.use(partials());
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
+
+app.use( function(req, res, next) {
+
+  res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.header('Pragma', 'no-cache');
+  res.header('Expires', 0);
+  next();
+
+});
+
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
@@ -40,7 +50,7 @@ app.use(session({
   resave: false,
   saveUninitialized: true,
   secret: 'tacocat',
-  store: new FileStore(),
+  //store: new FileStore(),
   cookie: { maxAge: (1000 * 60) }
 }));
 
@@ -56,11 +66,24 @@ var checkuser = function (req, res, next) {
 
   // TODO: do we need to read in cookie and verify it hasn't expired
   // or look at using session-cookie instead of using store
-  if (req.session.user) {
+  console.log('cookie expires: ');
+  console.log( req.session.cookie._expires instanceof Date);
+  if (req.session.user && req.session.cookie._expires > Date.now()) {
+    console.log( 'inside valid user and date');
+
+    console.log( req.session.user);
     next();
+
   } else {
-    req.session.error = 'Access denied!';
-    res.redirect('/login');
+    console.log('Our session has expired or user not logged in!!!!!');
+
+    req.session.destroy(function() {
+      console.log('in callback for destroying session!');
+      // next = null;
+      res.redirect('/login');
+    });
+    // req.session.error = 'Access denied!';
+    // res.redirect('/login');
   }
 };
 //end cookies and session
