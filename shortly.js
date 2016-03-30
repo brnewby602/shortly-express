@@ -36,48 +36,6 @@ console.log(GITHUB_CLIENT_SECRET);
 
 
 
-// Passport session setup.
-//   To support persistent login sessions, Passport needs to be able to
-//   serialize users into and deserialize users out of the session.  Typically,
-//   this will be as simple as storing the user ID when serializing, and finding
-//   the user by ID when deserializing.  However, since this example does not
-//   have a database of user records, the complete GitHub profile is serialized
-//   and deserialized.
-passport.serializeUser(function(user, done) {
-  done(null, user);
-});
-
-passport.deserializeUser(function(obj, done) {
-  done(null, obj);
-});
-
-
-// Use the GitHubStrategy within Passport.
-//   Strategies in Passport require a `verify` function, which accept
-//   credentials (in this case, an accessToken, refreshToken, and GitHub
-//   profile), and invoke a callback with a user object.
-passport.use(new GitHubStrategy({
-  clientID: GITHUB_CLIENT_ID,
-  clientSecret: GITHUB_CLIENT_SECRET,
-  callbackURL: 'http://127.0.0.1:3000/auth/github/callback'
-},
-  function(accessToken, refreshToken, profile, done) {
-    // asynchronous verification, for effect...
-    process.nextTick(function () {
-      
-      // To keep the example simple, the user's GitHub profile is returned to
-      // represent the logged-in user.  In a typical application, you would want
-      // to associate the GitHub account with a user record in your database,
-      // and return that user instead.
-      return done(null, profile);
-    });
-  }
-));
-
-
-
-
-
 
 
 
@@ -125,18 +83,64 @@ app.use(session({
 }));
 
 
+
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+
+
+
+// Passport session setup.
+//   To support persistent login sessions, Passport needs to be able to
+//   serialize users into and deserialize users out of the session.  Typically,
+//   this will be as simple as storing the user ID when serializing, and finding
+//   the user by ID when deserializing.  However, since this example does not
+//   have a database of user records, the complete GitHub profile is serialized
+//   and deserialized.
+passport.serializeUser(function(user, done) {
+  done(null, user);
+});
+
+passport.deserializeUser(function(obj, done) {
+  done(null, obj);
+});
+
+
+// Use the GitHubStrategy within Passport.
+//   Strategies in Passport require a `verify` function, which accept
+//   credentials (in this case, an accessToken, refreshToken, and GitHub
+//   profile), and invoke a callback with a user object.
+passport.use(new GitHubStrategy({
+  clientID: GITHUB_CLIENT_ID,
+  clientSecret: GITHUB_CLIENT_SECRET,
+  callbackURL: 'http://127.0.0.1:4568/auth/github/callback'
+},
+  function(accessToken, refreshToken, profile, done) {
+    // asynchronous verification, for effect...
+    process.nextTick(function () {
+      
+      // To keep the example simple, the user's GitHub profile is returned to
+      // represent the logged-in user.  In a typical application, you would want
+      // to associate the GitHub account with a user record in your database,
+      // and return that user instead.
+      return done(null, profile);
+    });
+  }
+));
+
 // /* Debugging to check the session value */
-// app.use(function printSession(req, res, next) {
-//   console.log('req.session = ', req.session);
-//   return next();
-// });
+app.use(function printSession(req, res, next) {
+  console.log('req.session = ', req.session);
+  return next();
+});
  
  
 var checkuser = function (req, res, next) {
 
   // TODO: do we need to read in cookie and verify it hasn't expired
   // or look at using session-cookie instead of using store
-  // console.log('cookie expires: ');
+  console.log('cookie expires: ');
   console.log( req.session.cookie._expires instanceof Date);
   if (req.session.user && req.session.cookie._expires > Date.now()) {
     console.log( 'inside valid user and date');
@@ -158,9 +162,10 @@ var checkuser = function (req, res, next) {
 };
 //end cookies and session
 
-app.get('/login', passport.authenticate('github', { scope: [ 'user:email' ] }),
+app.get('/login', 
+  // passport.authenticate('github', { scope: [ 'user:email' ] }),
 function(req, res) {
-  // res.render('login');
+  res.render('login');
 });
 
 
@@ -296,7 +301,8 @@ function(req, res) {
  
 app.get('/logout', function(req, res) {
   req.session.destroy(function() {
-    res.redirect('/');
+    req.logout();
+    res.redirect('/auth/l');
   });
 });
 
@@ -325,6 +331,10 @@ app.get('/auth/github',
 app.get('/auth/github/callback', 
   passport.authenticate('github', { failureRedirect: '/login' }),
   function(req, res) {
+    console.log('checking req from github authentication');
+    console.log(req.session);
+    req.session.user = req.session.passport.user.username;
+    console.log(req.session.user);
     res.redirect('/');
   });
 
